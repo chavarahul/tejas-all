@@ -1,116 +1,116 @@
-window.electron.receiveClipboardText((event, text) => {
-  const inputField = document.getElementById("user-input");
-  if (inputField) {
-    inputField.value = text;
-    inputField.focus();
+if (window.electron) {
+  window.electron.receiveClipboardText((event, text) => {
+      const inputField = document.getElementById("user-input");
+      if (inputField) {
+          inputField.value = text;
+          inputField.focus();
+      }
+  });
+}
+
+function showSection(section) {
+  document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+  const targetSection = document.getElementById(section);
+  if (targetSection) {
+      targetSection.style.display = 'flex';
   }
-});
+}
 
-document.getElementById("send-btn").addEventListener("click", async () => {
-  const userInput = document.getElementById("user-input").value;
-  if (userInput.trim() !== "") {
-    const messages = document.getElementById("messages");
+// Initialize chat visibility
+showSection('chat');
 
-    const userMessageElement = document.createElement("div");
-    userMessageElement.classList.add("user-message");
+// Add event listeners only if elements exist
+const sendBtn = document.getElementById('send-btn');
+const userInputField = document.getElementById('user-input');
 
-    const userMessageContainer = document.createElement("div");
-    userMessageContainer.classList.add("message-container");
+if (sendBtn) sendBtn.addEventListener('click', handleMessage);
+if (userInputField) {
+  userInputField.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+          handleMessage();
+      }
+  });
+}
 
-    const userIcon = document.createElement("img");
-    const userIconPath = "user-icon.png";  
-    userIcon.src = userIconPath;
-    userIcon.alt = "User Icon";
-    userIcon.classList.add("user-icon");
+async function handleMessage() {
+  const userInput = userInputField.value.trim();
+  if (userInput === '') return;
 
-    userIcon.onerror = () => {
-      userIcon.src = "./icon.png";
-    };
+  const messages = document.getElementById('messages');
+  if (!messages) return;
 
-    const userMessageText = document.createElement("span");
-    userMessageText.innerText = `${userInput}`;
+  // Add user message
+  const userMessageHTML = `
+      <div class="message user-message">
+          <div class="message-container">
+              <img src="/api/placeholder/25/25" alt="User Icon" class="user-icon">
+              <span>${userInput}</span>
+          </div>
+      </div>
+  `;
+  messages.insertAdjacentHTML('beforeend', userMessageHTML);
 
-    userMessageContainer.appendChild(userIcon);
-    userMessageContainer.appendChild(userMessageText);
-    userMessageElement.appendChild(userMessageContainer);
+  // Clear input and scroll
+  userInputField.value = '';
+  messages.scrollTop = messages.scrollHeight;
 
-    messages.appendChild(userMessageElement);
-    document.getElementById("user-input").value = "";
-
-    messages.scrollTop = messages.scrollHeight;
-
-    try {
+  try {
       const response = await fetch('http://localhost:5000/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ input: userInput }),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: userInput }),
       });
 
+      let botResponse = "Sorry, an error occurred while processing your request.";
       if (response.ok) {
-        const result = await response.json();
-
-        const botMessageElement = document.createElement("div");
-        botMessageElement.classList.add("bot-message");
-
-        const botMessageContainer = document.createElement("div");
-        botMessageContainer.classList.add("message-container");
-
-        const botIcon = document.createElement("img");
-        botIcon.src = "https://cdn-icons-png.flaticon.com/512/1144/1144760.png"; 
-        botIcon.alt = "Bot Icon";
-        botIcon.classList.add("bot-icon");
-
-        const botMessageText = document.createElement("span");
-        botMessageText.innerText = `${result.response}`;
-
-        botMessageContainer.appendChild(botIcon);
-        botMessageContainer.appendChild(botMessageText);
-        botMessageElement.appendChild(botMessageContainer);
-
-        messages.appendChild(botMessageElement);
-
-        messages.scrollTop = messages.scrollHeight;
-      } else {
-        throw new Error('Failed to fetch response from server');
+          const result = await response.json();
+          botResponse = result.response;
       }
-    } catch (error) {
-      const errorElement = document.createElement("div");
-      errorElement.classList.add("bot-message");
 
-      const errorMessageContainer = document.createElement("div");
-      errorMessageContainer.classList.add("message-container");
-
-      const errorIcon = document.createElement("img");
-      errorIcon.src = "https://static.vecteezy.com/system/resources/previews/006/662/139/non_2x/artificial-intelligence-ai-processor-chip-icon-symbol-for-graphic-design-logo-web-site-social-media-mobile-app-ui-illustration-free-vector.jpg"; 
-      errorIcon.alt = "Bot Icon";
-      errorIcon.classList.add("bot-icon");
-
-      const errorMessageText = document.createElement("span");
-      errorMessageText.innerText =
-        "Sorry, an error occurred while processing your request.";
-
-      errorMessageContainer.appendChild(errorIcon);
-      errorMessageContainer.appendChild(errorMessageText);
-      errorElement.appendChild(errorMessageContainer);
-
-      messages.appendChild(errorElement);
-
-      messages.scrollTop = messages.scrollHeight;
-    }
+      // Add bot response
+      const botMessageHTML = `
+          <div class="message bot-message">
+              <div class="message-container">
+                  <img src="./icon.png" alt="Bot Icon" class="bot-icon">
+                  <span>${botResponse}</span>
+              </div>
+          </div>
+      `;
+      messages.insertAdjacentHTML('beforeend', botMessageHTML);
+  } catch (error) {
+      console.error("Error fetching bot response:", error);
+      const errorMessageHTML = `
+          <div class="message bot-message error-message">
+              <div class="message-container">
+                  <img src="./icon.png" alt="Bot Icon" class="bot-icon">
+                  <span>Sorry, an error occurred while processing your request.</span>
+              </div>
+          </div>
+      `;
+      messages.insertAdjacentHTML('beforeend', errorMessageHTML);
   }
-});
 
-document.querySelector(".close-chatbot").addEventListener("click", () => {
-  document.querySelector(".chatbot-container").style.display = "none";
-  window.electron.disableMouseEvents();
-});
+  messages.scrollTop = messages.scrollHeight;
+}
 
-document.querySelector(".chatbot-container").addEventListener("mouseenter", () => {
-  window.electron.enableMouseEvents();
-});
+if (window.electron) {
+  const closeBtn = document.querySelector(".close-chatbot");
+  const chatContainer = document.querySelector(".chatbot-container");
 
-document.querySelector(".chatbot-container").addEventListener("mouseleave", () => {
-  window.electron.disableMouseEvents();
-});
+  if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+          chatContainer.style.display = "none";
+          window.electron.disableMouseEvents();
+      });
+  }
+
+  if (chatContainer) {
+      chatContainer.addEventListener("mouseenter", () => {
+          window.electron.enableMouseEvents();
+      });
+
+      chatContainer.addEventListener("mouseleave", () => {
+          window.electron.disableMouseEvents();
+      });
+  }
+}

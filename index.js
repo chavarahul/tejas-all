@@ -20,7 +20,6 @@ const PORT = 5000;
 
 appServer.use(express.json());
 
-// API route to call Gemini AI
 appServer.post('/generate', async (req, res) => {
   const { input } = req.body;
   if (!input) {
@@ -36,7 +35,6 @@ appServer.post('/generate', async (req, res) => {
   }
 });
 
-// Start the express server
 appServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

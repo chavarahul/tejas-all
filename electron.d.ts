@@ -1,4 +1,3 @@
-// electron.d.ts
 import { IpcRenderer } from 'electron';
 
 declare global {

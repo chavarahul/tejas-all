@@ -1,24 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chatbot</title>
+  <title>AI Desktop Assistant</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="chatbot-container">
-    <div class="chatbot-header">
-      <span>AI Optimiser</span>
-      <button class="close-chatbot">X</button>
-    </div>
-    <div class="chatbot-body">
-      <div class="messages" id="messages"></div>
-      <input type="text" id="user-input" placeholder="Type your message..." />
-      <button id="send-btn">Send</button>
-    </div>
-  </div>
 
+<body>
+  <div class="dashboard">
+    <div class="sidebar">
+        <button class="menu-item" onclick="showSection('chat')">
+            <div class="btn-img">
+                <img class="image" src="https://cdn-icons-png.flaticon.com/512/6072/6072846.png" alt="Chat" />
+            </div>
+        </button>
+        <button class="menu-item" onclick="showSection('settings')">
+            <div class="btn-img">
+                <img class="image" src="https://cdn-icons-png.flaticon.com/512/8187/8187143.png" alt="Settings" />
+            </div>
+        </button>
+    </div>
+    <div class="content">
+        <div id="chat" class="section">
+            <div class="chatbot-container">
+                <div class="chatbot-header">
+                    <span>AI Assistant</span>
+                    <button class="close-chatbot" onclick="showSection('dashboard')">Close</button>
+                </div>
+                <div class="chatbot-body">
+                    <div class="messages" id="messages">
+                        <div class="message bot-message">
+                            <div class="message-content">
+                                Hello! How can I help you today?
+                            </div>
+                        </div>
+                        <div class="message user-message">
+                            <div class="message-content">
+                                Hi! I need help with something.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-area">
+                        <input type="text" id="user-input" placeholder="Type your message..." />
+                        <button id="send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="settings" class="section" style="display:none;">
+            <h2>Settings</h2>
+            <button class="close-chatbot" onclick="showSection('dashboard')">Back</button>
+        </div>
+    </div>
+</div>
+  <script>
+       function showSection(section) {
+            document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+            document.getElementById(section).style.display = 'block';
+        }
+        showSection('chat');
+  </script>
   <script src="renderer.js"></script>
 </body>
+
 </html>
