@@ -6,6 +6,9 @@ import { dirname } from 'path';
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fileOperations } from './fileOperations.js';
+import screenshot from 'screenshot-desktop';
+import Tesseract from 'tesseract.js';
+import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -133,4 +136,48 @@ ipcMain.handle('execute-command', async (event, command) => {
 
 ipcMain.handle('start-voice-recognition', async () => {
   return { success: true };
+});
+
+
+async function captureScreen() {
+  try {
+    const imagePath = await screenshot();
+    return imagePath;
+  } catch (error) {
+    console.error('Error capturing screen:', error);
+    throw error;
+  }
+}
+
+async function processScreenContent(imagePath) {
+  try {
+    const { data: { text } } = await Tesseract.recognize(imagePath);
+    
+    const metadata = await sharp(imagePath).metadata();
+    
+    return {
+      text,
+      imageMetadata: metadata
+    };
+  } catch (error) {
+    console.error('Error processing screen content:', error);
+    throw error;
+  }
+}
+
+
+ipcMain.handle('start-screen-monitor', async () => {
+  try {
+    const imagePath = await captureScreen();
+    const screenContent = await processScreenContent(imagePath);
+    return {
+      success: true,
+      data: screenContent
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
 });

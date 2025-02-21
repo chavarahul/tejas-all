@@ -25,6 +25,11 @@
                 <h3>📂</h3>
                 <ul id="file-list"></ul>
             </button>
+            <button class="menu-item" onclick="showSection('screen-monitor')">
+                <div class="btn-img">
+                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/2956/2956762.png" alt="Screen Monitor" />
+                </div>
+            </button>
         </div>
         <div class="content">
             <div id="chat" class="section">
@@ -40,11 +45,6 @@
                     </div>
                     <div class="chatbot-body">
                         <div class="messages" id="messages">
-                            <div class="">
-                                <img 
-                                   src=""
-                                />
-                            </div>
                         </div>
                         <div class="input-area">
                             <input type="text" id="user-input" placeholder="Type your message..." />
@@ -54,7 +54,7 @@
                 </div>
             </div>
             <div id="settings" class="section" style="display:none;">
-                  <h2>Settings</h2>
+                <h2>Settings</h2>
                 <button class="close-chatbot" onclick="showSection('dashboard')">Back</button>
             </div>
             <div id="files" class="section" style="display: none;">
@@ -63,7 +63,8 @@
                     <div class="command-controls">
                         <button id="voice-btn" class="voice-button">🎤 Speak</button>
                         <div class="command-input">
-                            <input type="text" id="text-command" placeholder="Try: 'open folder projects in VS Code' or 'list files in Downloads'">
+                            <input type="text" id="text-command"
+                                placeholder="Try: 'open folder projects in VS Code' or 'list files in Downloads'">
                             <button id="execute-btn">Execute</button>
                         </div>
                     </div>
@@ -77,6 +78,23 @@
                         </ul>
                     </div>
                     <div id="command-result" class="command-result"></div>
+                </div>
+            </div>
+            <div id="screen-monitor" class="section" style="display: none;">
+                <div class="screen-monitor-container">
+                    <div class="monitor-header">
+                        <h2>Screen Monitor</h2>
+                        <button id="start-monitor" class="monitor-btn">Start Monitoring</button>
+                    </div>
+                    <div class="screen-content">
+                        <div id="screen-preview"></div>
+                        <div class="analysis-panel">
+                            <textarea id="screen-question"
+                                placeholder="Ask a question about the screen content..."></textarea>
+                            <button id="analyze-btn">Analyze</button>
+                        </div>
+                        <div id="analysis-result"></div>
+                    </div>
                 </div>
             </div>
         </div>

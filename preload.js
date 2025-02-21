@@ -6,6 +6,6 @@ contextBridge.exposeInMainWorld('electron', {
     disableMouseEvents: () => ipcRenderer.send('disable-mouse-events'),
     executeCommand: (command) => ipcRenderer.invoke('execute-command', command),
     startVoiceRecognition: () => ipcRenderer.invoke('start-voice-recognition'),
-    // Add message handling for file operations
-    handleFileOperation: (operation, path) => ipcRenderer.invoke('file-operation', operation, path)
+    handleFileOperation: (operation, path) => ipcRenderer.invoke('file-operation', operation, path),
+    startScreenMonitor: () => ipcRenderer.invoke('start-screen-monitor')
 });
