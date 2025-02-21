@@ -10,7 +10,8 @@ import screenshot from 'screenshot-desktop';
 import Tesseract from 'tesseract.js';
 import sharp from 'sharp';
 import { desktopCapturer } from 'electron';
-
+import os from 'os';
+import fs from 'fs/promises';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -141,23 +142,6 @@ ipcMain.handle('start-voice-recognition', async () => {
 });
 
 
-async function processScreenContent(imagePath) {
-  try {
-    const { data: { text } } = await Tesseract.recognize(imagePath);
-    
-    const metadata = await sharp(imagePath).metadata();
-    
-    return {
-      text,
-      imageMetadata: metadata
-    };
-  } catch (error) {
-    console.error('Error processing screen content:', error);
-    throw error;
-  }
-}
-
-
 ipcMain.handle('start-screen-monitor', async () => {
   try {
     const imagePath = await captureScreen();
@@ -174,35 +158,77 @@ ipcMain.handle('start-screen-monitor', async () => {
   }
 });
 
+async function processScreenContent(imageDataUrl) {
+  const tempDir = os.tmpdir();
+  const tempImagePath = path.join(tempDir, `screen-${Date.now()}.png`);
+  
+  try {
+      const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      await sharp(imageBuffer)
+          .png()
+          .toFile(tempImagePath);
+
+      const { data: { text } } = await Tesseract.recognize(
+          tempImagePath,
+          'eng',
+          {
+              logger: m => console.log(m) 
+          }
+      );
+
+      const metadata = await sharp(tempImagePath).metadata();
+
+      await fs.unlink(tempImagePath);
+      
+      return {
+          text,
+          imageMetadata: metadata
+      };
+  } catch (error) {
+      try {
+          await fs.unlink(tempImagePath);
+      } catch (cleanupError) {
+          console.error('Failed to clean up temporary file:', cleanupError);
+      }
+      
+      console.error('Error processing screen content:', error);
+      throw error;
+  }
+}
+
 async function captureScreen() {
   try {
-    const sources = await desktopCapturer.getSources({
-      types: ['screen'],
-      thumbnailSize: {
-        width: 1920,
-        height: 1080
-      }
-    });
+      const sources = await desktopCapturer.getSources({
+          types: ['screen'],
+          thumbnailSize: {
+              width: 1920,
+              height: 1080
+          }
+      });
 
-    if (!sources || sources.length === 0) {
-      throw new Error('No screen sources found');
-    }
-
-    const mainScreen = sources[0];
-    return {
-      success: true,
-      data: {
-        image: mainScreen.thumbnail.toDataURL(),
-        screenName: mainScreen.name,
-        timestamp: new Date().toISOString()
+      if (!sources || sources.length === 0) {
+          throw new Error('No screen sources found');
       }
-    };
+
+      const mainScreen = sources[0];
+      const imageDataUrl = mainScreen.thumbnail.toDataURL();
+
+      return {
+          success: true,
+          data: {
+              image: imageDataUrl,
+              screenName: mainScreen.name,
+              timestamp: new Date().toISOString()
+          }
+      };
   } catch (error) {
-    console.error('Screen capture error:', error);
-    return {
-      success: false,
-      error: `Screen capture failed: ${error.message}`
-    };
+      console.error('Screen capture error:', error);
+      return {
+          success: false,
+          error: `Screen capture failed: ${error.message}`
+      };
   }
 }
 
@@ -210,44 +236,68 @@ let monitoringInterval = null;
 
 ipcMain.handle('toggle-screen-monitor', async (event, shouldStart) => {
   try {
-    if (shouldStart) {
-      if (monitoringInterval) {
-        clearInterval(monitoringInterval);
-      }
-
-      const initialCapture = await captureScreen();
-      if (!initialCapture.success) {
-        throw new Error(initialCapture.error);
-      }
-
-      monitoringInterval = setInterval(async () => {
-        try {
-          const newCapture = await captureScreen();
-          if (newCapture.success) {
-            mainWindow.webContents.send('screen-update', newCapture.data);
+      if (shouldStart) {
+          if (monitoringInterval) {
+              clearInterval(monitoringInterval);
           }
-        } catch (err) {
-          console.error('Interval capture error:', err);
-        }
-      }, 5000); 
 
-      return initialCapture;
+          const initialCapture = await captureScreen();
+          if (!initialCapture.success) {
+              throw new Error(initialCapture.error);
+          }
 
-    } else {
-      if (monitoringInterval) {
-        clearInterval(monitoringInterval);
-        monitoringInterval = null;
+          monitoringInterval = setInterval(async () => {
+              try {
+                  const newCapture = await captureScreen();
+                  if (newCapture.success) {
+                      event.sender.send('screen-update', newCapture.data);
+                  }
+              } catch (err) {
+                  console.error('Interval capture error:', err);
+              }
+          }, 5000);
+
+          return initialCapture;
+      } else {
+          if (monitoringInterval) {
+              clearInterval(monitoringInterval);
+              monitoringInterval = null;
+          }
+          return {
+              success: true,
+              isActive: false
+          };
       }
-      return {
-        success: true,
-        isActive: false
-      };
-    }
   } catch (error) {
-    console.error('Toggle monitor error:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+      console.error('Toggle monitor error:', error);
+      return {
+          success: false,
+          error: error.message
+      };
+  }
+});
+
+ipcMain.handle('analyze-screen', async (event, question) => {
+  try {
+      const capture = await captureScreen();
+      if (!capture.success) {
+          throw new Error(capture.error);
+      }
+
+      const screenContent = await processScreenContent(capture.data.image);
+
+
+      
+      return {
+          success: true,
+          response: `Extracted text from screen: ${screenContent.text}`,
+          metadata: screenContent.imageMetadata
+      };
+  } catch (error) {
+      console.error('Screen analysis error:', error);
+      return {
+          success: false,
+          error: error.message
+      };
   }
 });

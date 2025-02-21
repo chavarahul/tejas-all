@@ -105,7 +105,6 @@ async function handleMessage() {
       };
       speechSynthesis.speak(utterance);
   } else if (!isSoundEnabled) {
-      // If sound is disabled, still show animation briefly
       setTimeout(() => {
           avatarContainer.classList.remove('speaking');
           currentlySpeaking = false;
@@ -266,18 +265,40 @@ const initScreenMonitoring = () => {
                 alert('Please enter a question about the screen content');
                 return;
             }
-
             const result = await window.electron.analyzeScreen(question);
-            
-            if (result.success) {
-                // Display the AI analysis result
-                const analysisResult = document.createElement('div');
-                analysisResult.className = 'analysis-result';
-                analysisResult.textContent = result.response;
-                document.querySelector('.analysis-panel').appendChild(analysisResult);
-            } else {
+        
+            if (!result.success) {
                 throw new Error(result.error || 'Failed to analyze screen content');
             }
+    
+            // Make API call to generate response
+            const response = await fetch('http://localhost:5000/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  input: `The following text has been extracted from a screen:\n"${result.response}"\n\nAnalyze the text carefully and answer the following question with the best possible explanation.\n\nIf the answer has multiple possibilities, provide options or reasoning where necessary.\n\nQuestion:\n"${question}"\n\nYour response should be:\n- Direct and precise when a clear answer exists.\n- Detailed and explanatory when analysis is needed.\n- If the text contains options, list and evaluate them.\n- If the information is insufficient, explain why.\n\nProvide your answer in a structured way.`
+                })
+            });
+    
+            if (!response.ok) {
+                throw new Error(`API request failed with status: ${response.status}`);
+            }
+    
+            const res = await response.json();
+    
+            const analysisResult = document.createElement('div');
+            analysisResult.className = 'analysis-result';
+            analysisResult.textContent = res.response;
+            
+            const analysisPanel = document.querySelector('.analysis-panel');
+            if (!analysisPanel) {
+                throw new Error('Analysis panel element not found');
+            }
+            
+            analysisPanel.appendChild(analysisResult);
+            
+            return res.response;
+
         } catch (error) {
             console.error('Analysis error:', error);
             alert(`Error: ${error.message}`);
