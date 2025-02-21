@@ -141,27 +141,6 @@ ipcMain.handle('start-voice-recognition', async () => {
 });
 
 
-async function captureScreen() {
-  try {
-    const sources = await desktopCapturer.getSources({
-      types: ['screen'],
-      thumbnailSize: { width: 1920, height: 1080 }
-    });
-    
-    const mainScreen = sources[0];
-    const imageData = mainScreen.thumbnail.toDataURL();
-    
-    return {
-      image: imageData,
-      screenName: mainScreen.name,
-      timestamp: new Date().toISOString()
-    };
-  } catch (error) {
-    console.error('Error capturing screen:', error);
-    throw error;
-  }
-}
-
 async function processScreenContent(imagePath) {
   try {
     const { data: { text } } = await Tesseract.recognize(imagePath);
@@ -195,18 +174,65 @@ ipcMain.handle('start-screen-monitor', async () => {
   }
 });
 
+async function captureScreen() {
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: {
+        width: 1920,
+        height: 1080
+      }
+    });
+
+    if (!sources || sources.length === 0) {
+      throw new Error('No screen sources found');
+    }
+
+    const mainScreen = sources[0];
+    return {
+      success: true,
+      data: {
+        image: mainScreen.thumbnail.toDataURL(),
+        screenName: mainScreen.name,
+        timestamp: new Date().toISOString()
+      }
+    };
+  } catch (error) {
+    console.error('Screen capture error:', error);
+    return {
+      success: false,
+      error: `Screen capture failed: ${error.message}`
+    };
+  }
+}
 
 let monitoringInterval = null;
 
 ipcMain.handle('toggle-screen-monitor', async (event, shouldStart) => {
   try {
     if (shouldStart) {
-      const screenData = await captureScreen();
-      return {
-        success: true,
-        isActive: true,
-        data: screenData
-      };
+      if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+      }
+
+      const initialCapture = await captureScreen();
+      if (!initialCapture.success) {
+        throw new Error(initialCapture.error);
+      }
+
+      monitoringInterval = setInterval(async () => {
+        try {
+          const newCapture = await captureScreen();
+          if (newCapture.success) {
+            mainWindow.webContents.send('screen-update', newCapture.data);
+          }
+        } catch (err) {
+          console.error('Interval capture error:', err);
+        }
+      }, 5000); 
+
+      return initialCapture;
+
     } else {
       if (monitoringInterval) {
         clearInterval(monitoringInterval);
@@ -218,37 +244,7 @@ ipcMain.handle('toggle-screen-monitor', async (event, shouldStart) => {
       };
     }
   } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
-
-ipcMain.handle('analyze-screen', async (event, question) => {
-  try {
-    const screenData = await captureScreen();
-    
-    if (!screenData.success) {
-      throw new Error('Failed to capture screen');
-    }
-
-    const prompt = `Analyzing screen content from ${screenData.data.screenName} captured at ${screenData.data.timestamp}.
-    Extracted text content: ${screenData.data.text}
-    
-    User question: "${question}"
-    
-    Please analyze the content and provide a detailed response.`;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    
-    return {
-      success: true,
-      response: response
-    };
-  } catch (error) {
-    console.error('Screen analysis error:', error);
+    console.error('Toggle monitor error:', error);
     return {
       success: false,
       error: error.message

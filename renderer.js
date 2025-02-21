@@ -242,4 +242,90 @@ async function executeCommand(command) {
       commandResult.innerHTML = `<div class="error"><p>${errorMessage}</p></div>`;
     }
   }
-}
+}let isMonitoring = false;
+
+const initScreenMonitoring = () => {
+    const startMonitorBtn = document.getElementById('start-monitor');
+    const screenPreviewImg = document.getElementById('screen-preview-img');
+    const monitorStatus = document.getElementById('monitor-status');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const screenQuestion = document.getElementById('screen-question');
+
+    const handleScreenUpdate = (event, data) => {
+        if (data && data.image) {
+            screenPreviewImg.src = data.image;
+        }
+    };
+
+    const handleAnalysis = async () => {
+        try {
+            analyzeBtn.disabled = true;
+            const question = screenQuestion.value.trim();
+            
+            if (!question) {
+                alert('Please enter a question about the screen content');
+                return;
+            }
+
+            const result = await window.electron.analyzeScreen(question);
+            
+            if (result.success) {
+                // Display the AI analysis result
+                const analysisResult = document.createElement('div');
+                analysisResult.className = 'analysis-result';
+                analysisResult.textContent = result.response;
+                document.querySelector('.analysis-panel').appendChild(analysisResult);
+            } else {
+                throw new Error(result.error || 'Failed to analyze screen content');
+            }
+        } catch (error) {
+            console.error('Analysis error:', error);
+            alert(`Error: ${error.message}`);
+        } finally {
+            analyzeBtn.disabled = false;
+        }
+    };
+
+    const toggleMonitoring = async () => {
+        try {
+            isMonitoring = !isMonitoring;
+            startMonitorBtn.disabled = true;
+
+            const result = await window.electron.toggleScreenMonitor(isMonitoring);
+            
+            if (result.success) {
+                startMonitorBtn.textContent = isMonitoring ? 'Stop Monitoring' : 'Start Monitoring';
+                monitorStatus.textContent = isMonitoring ? '🟢 Active' : '⚪ Inactive';
+                
+                if (result.data && result.data.image) {
+                    screenPreviewImg.src = result.data.image;
+                }
+
+                if (isMonitoring) {
+                    window.electron.onScreenUpdate(handleScreenUpdate);
+                } else {
+                    window.electron.removeScreenUpdate(handleScreenUpdate);
+                }
+            } else {
+                throw new Error(result.error || 'Failed to toggle screen monitoring');
+            }
+        } catch (error) {
+            console.error('Monitor toggle error:', error);
+            alert(`Error: ${error.message}`);
+            isMonitoring = false;
+            startMonitorBtn.textContent = 'Start Monitoring';
+            monitorStatus.textContent = '⚪ Inactive';
+        } finally {
+            startMonitorBtn.disabled = false;
+        }
+    };
+
+    if (startMonitorBtn) {
+        startMonitorBtn.addEventListener('click', toggleMonitoring);
+    }
+    if (analyzeBtn) {
+        analyzeBtn.addEventListener('click', handleAnalysis);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', initScreenMonitoring);

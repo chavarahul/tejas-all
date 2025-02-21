@@ -8,5 +8,7 @@ contextBridge.exposeInMainWorld('electron', {
     startVoiceRecognition: () => ipcRenderer.invoke('start-voice-recognition'),
     handleFileOperation: (operation, path) => ipcRenderer.invoke('file-operation', operation, path),
     toggleScreenMonitor: (shouldStart) => ipcRenderer.invoke('toggle-screen-monitor', shouldStart),
-    analyzeScreen: (question) => ipcRenderer.invoke('analyze-screen', question)
+    analyzeScreen: (question) => ipcRenderer.invoke('analyze-screen', question),
+    onScreenUpdate: (callback) => ipcRenderer.on('screen-update', callback),
+    removeScreenUpdate: (callback) => ipcRenderer.removeListener('screen-update', callback)
 });
