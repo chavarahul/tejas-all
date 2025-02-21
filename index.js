@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { fileOperations } from './fileOperations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -115,4 +116,21 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
+});
+
+ipcMain.handle('execute-command', async (event, command) => {
+  try {
+      const result = await fileOperations.processCommand(command);
+      return result;
+  } catch (error) {
+      console.error('Command execution error:', error);
+      return {
+          success: false,
+          message: `Error executing command: ${error.message}`
+      };
+  }
+});
+
+ipcMain.handle('start-voice-recognition', async () => {
+  return { success: true };
 });

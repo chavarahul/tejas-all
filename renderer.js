@@ -16,10 +16,8 @@ function showSection(section) {
   }
 }
 
-// Initialize chat visibility
 showSection('chat');
 
-// Add event listeners only if elements exist
 const sendBtn = document.getElementById('send-btn');
 const userInputField = document.getElementById('user-input');
 
@@ -32,65 +30,99 @@ if (userInputField) {
   });
 }
 
-async function handleMessage() {
-  const userInput = userInputField.value.trim();
-  if (userInput === '') return;
+let currentlySpeaking = false;
+        
+        async function handleMessage() {
+            const userInput = userInputField.value.trim();
+            if (userInput === '') return;
 
-  const messages = document.getElementById('messages');
-  if (!messages) return;
+            const messages = document.getElementById('messages');
+            if (!messages) return;
 
-  // Add user message
-  const userMessageHTML = `
-      <div class="message user-message">
-          <div class="message-container">
-              <img src="/api/placeholder/25/25" alt="User Icon" class="user-icon">
-              <span>${userInput}</span>
-          </div>
-      </div>
-  `;
-  messages.insertAdjacentHTML('beforeend', userMessageHTML);
+            const userMessageHTML = `
+                <div class="message user-message">
+                    <div class="message-content">
+                        <img src="/api/placeholder/25/25" alt="User Icon" class="user-icon">
+                        <span class="message-text">${userInput}</span>
+                    </div>
+                </div>
+            `;
+            messages.insertAdjacentHTML('beforeend', userMessageHTML);
 
-  // Clear input and scroll
-  userInputField.value = '';
-  messages.scrollTop = messages.scrollHeight;
+            userInputField.value = '';
+            messages.scrollTop = messages.scrollHeight;
 
-  try {
-      const response = await fetch('http://localhost:5000/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input: userInput }),
-      });
+            try {
+                const response = await fetch('http://localhost:5000/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ input: userInput }),
+                });
 
-      let botResponse = "Sorry, an error occurred while processing your request.";
-      if (response.ok) {
-          const result = await response.json();
-          botResponse = result.response;
-      }
+                let botResponse = "Sorry, an error occurred while processing your request.";
+                if (response.ok) {
+                    const result = await response.json();
+                    botResponse = result.response;
+                }
 
-      // Add bot response
-      const botMessageHTML = `
-          <div class="message bot-message">
-              <div class="message-container">
-                  <img src="./icon.png" alt="Bot Icon" class="bot-icon">
-                  <span>${botResponse}</span>
-              </div>
-          </div>
-      `;
-      messages.insertAdjacentHTML('beforeend', botMessageHTML);
-  } catch (error) {
-      console.error("Error fetching bot response:", error);
-      const errorMessageHTML = `
-          <div class="message bot-message error-message">
-              <div class="message-container">
-                  <img src="./icon.png" alt="Bot Icon" class="bot-icon">
-                  <span>Sorry, an error occurred while processing your request.</span>
-              </div>
-          </div>
-      `;
-      messages.insertAdjacentHTML('beforeend', errorMessageHTML);
-  }
+                const botMessageHTML = `
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            <div class="avatar-container">
+                                <div class="bot-face">
+                                    <div class="bot-eyes">
+                                        <div class="bot-eye"></div>
+                                        <div class="bot-eye"></div>
+                                    </div>
+                                    <div class="bot-mouth"></div>
+                                </div>
+                            </div>
+                            <span class="message-text">${botResponse}</span>
+                        </div>
+                    </div>
+                `;
+                messages.insertAdjacentHTML('beforeend', botMessageHTML);
+                
+                // Start speaking animation
+                const lastBotMessage = messages.lastElementChild;
+                const avatarContainer = lastBotMessage.querySelector('.avatar-container');
+                avatarContainer.classList.add('speaking');
+                
+                // Text-to-speech
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(botResponse);
+                    utterance.onend = () => {
+                        avatarContainer.classList.remove('speaking');
+                        currentlySpeaking = false;
+                    };
+                    utterance.onstart = () => {
+                        currentlySpeaking = true;
+                    };
+                    speechSynthesis.speak(utterance);
+                }
 
-  messages.scrollTop = messages.scrollHeight;
+            } catch (error) {
+                console.error("Error fetching bot response:", error);
+                const errorMessageHTML = `
+                    <div class="message bot-message error-message">
+                        <div class="message-content">
+                            <div class="avatar-container">
+                                <div class="bot-face">
+                                    <div class="bot-eyes">
+                                        <div class="bot-eye"></div>
+                                        <div class="bot-eye"></div>
+                                    </div>
+                                    <div class="bot-mouth"></div>
+                                </div>
+                            </div>
+                            <span class="message-text">Sorry, an error occurred while processing your request.</span>
+                        </div>
+                    </div>
+                `;
+                messages.insertAdjacentHTML('beforeend', errorMessageHTML);
+            }
+
+            messages.scrollTop = messages.scrollHeight;
 }
 
 if (window.electron) {
@@ -112,5 +144,87 @@ if (window.electron) {
       chatContainer.addEventListener("mouseleave", () => {
           window.electron.disableMouseEvents();
       });
+  }
+}
+
+const voiceBtn = document.getElementById('voice-btn');
+const textCommand = document.getElementById('text-command');
+const executeBtn = document.getElementById('execute-btn');
+
+if (voiceBtn) {
+  voiceBtn.addEventListener('click', async () => {
+    try {
+      if ('speechSynthesis' in window && isSoundEnabled) {
+        const utterance = new SpeechSynthesisUtterance(botResponse);
+        utterance.onend = () => {
+            avatarContainer.classList.remove('speaking');
+            currentlySpeaking = false;
+        };
+        utterance.onstart = () => {
+            currentlySpeaking = true;
+        };
+        speechSynthesis.speak(utterance);
+    } else if (!isSoundEnabled) {
+        setTimeout(() => {
+            avatarContainer.classList.remove('speaking');
+            currentlySpeaking = false;
+        }, 2000);
+    }
+    } catch (error) {
+      console.error('Error with voice recognition:', error);
+      alert('Error starting voice recognition');
+    }
+  });
+}
+
+if (executeBtn) {
+  executeBtn.addEventListener('click', () => {
+    const command = textCommand.value.trim();
+    if (command) {
+      executeCommand(command);
+    }
+  });
+}
+
+async function executeCommand(command) {
+  try {
+    console.log('Executing command:', command); 
+    const result = await window.electron.executeCommand(command);
+    console.log('Command result:', result); 
+    
+    const commandResult = document.getElementById('command-result');
+    if (commandResult) {
+      commandResult.innerHTML = `
+        <div class="${result.success ? 'success' : 'error'}">
+          <p>${result.message}</p>
+          ${result.data ? `<pre>${JSON.stringify(result.data, null, 2)}</pre>` : ''}
+        </div>
+      `;
+    }
+    
+    const messages = document.getElementById('messages');
+    if (messages) {
+      const messageHTML = `
+        <div class="message ${result.success ? 'bot-message' : 'error-message'}">
+          <div class="message-content">
+            <img src="./icon.png" alt="Bot Icon" class="bot-icon">
+            <span>${result.message}</span>
+            ${result.data ? `<pre>${JSON.stringify(result.data, null, 2)}</pre>` : ''}
+          </div>
+        </div>
+      `;
+      messages.insertAdjacentHTML('beforeend', messageHTML);
+      messages.scrollTop = messages.scrollHeight;
+    }
+    
+    textCommand.value = '';
+  } catch (error) {
+    console.error('Error executing command:', error);
+    const errorMessage = 'Error executing command: ' + error.message;
+    
+    const commandResult = document.getElementById('command-result');
+    if (commandResult) {
+      commandResult.innerHTML = `<div class="error"><p>${errorMessage}</p></div>`;
+    }
   }
 }

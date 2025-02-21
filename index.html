@@ -2,67 +2,93 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Desktop Assistant</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Desktop Assistant</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div class="dashboard">
-    <div class="sidebar">
-        <button class="menu-item" onclick="showSection('chat')">
-            <div class="btn-img">
-                <img class="image" src="https://cdn-icons-png.flaticon.com/512/6072/6072846.png" alt="Chat" />
-            </div>
-        </button>
-        <button class="menu-item" onclick="showSection('settings')">
-            <div class="btn-img">
-                <img class="image" src="https://cdn-icons-png.flaticon.com/512/8187/8187143.png" alt="Settings" />
-            </div>
-        </button>
-    </div>
-    <div class="content">
-        <div id="chat" class="section">
-            <div class="chatbot-container">
-                <div class="chatbot-header">
-                    <span>AI Assistant</span>
-                    <button class="close-chatbot" onclick="showSection('dashboard')">Close</button>
+    <div class="dashboard">
+        <div class="sidebar">
+            <button class="menu-item" onclick="showSection('chat')">
+                <div class="btn-img">
+                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/6072/6072846.png" alt="Chat" />
                 </div>
-                <div class="chatbot-body">
-                    <div class="messages" id="messages">
-                        <div class="message bot-message">
-                            <div class="message-content">
-                                Hello! How can I help you today?
+            </button>
+            <button class="menu-item" onclick="showSection('settings')">
+                <div class="btn-img">
+                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/8187/8187143.png" alt="Settings" />
+                </div>
+            </button>
+            <button class="menu-item" onclick="showSection('files')">
+                <h3>📂</h3>
+                <ul id="file-list"></ul>
+            </button>
+        </div>
+        <div class="content">
+            <div id="chat" class="section">
+                <div class="chatbot-container">
+                    <div class="chatbot-header">
+                        <div class="header-title">
+                            <span>AI Assistant</span>
+                            <button id="sound-toggle" class="sound-toggle" title="Toggle sound">
+                                🔊
+                            </button>
+                        </div>
+                        <button class="close-chatbot" onclick="showSection('dashboard')">Close</button>
+                    </div>
+                    <div class="chatbot-body">
+                        <div class="messages" id="messages">
+                            <div class="">
+                                <img 
+                                   src=""
+                                />
                             </div>
                         </div>
-                        <div class="message user-message">
-                            <div class="message-content">
-                                Hi! I need help with something.
-                            </div>
+                        <div class="input-area">
+                            <input type="text" id="user-input" placeholder="Type your message..." />
+                            <button id="send-btn">Send</button>
                         </div>
                     </div>
-                    <div class="input-area">
-                        <input type="text" id="user-input" placeholder="Type your message..." />
-                        <button id="send-btn">Send</button>
+                </div>
+            </div>
+            <div id="settings" class="section" style="display:none;">
+                  <h2>Settings</h2>
+                <button class="close-chatbot" onclick="showSection('dashboard')">Back</button>
+            </div>
+            <div id="files" class="section" style="display: none;">
+                <div class="files-container">
+                    <h2>🎙️ Voice or Text Command</h2>
+                    <div class="command-controls">
+                        <button id="voice-btn" class="voice-button">🎤 Speak</button>
+                        <div class="command-input">
+                            <input type="text" id="text-command" placeholder="Try: 'open folder projects in VS Code' or 'list files in Downloads'">
+                            <button id="execute-btn">Execute</button>
+                        </div>
                     </div>
+                    <div class="command-examples">
+                        <h3>Example commands:</h3>
+                        <ul>
+                            <li>"open folder [name] in VS Code"</li>
+                            <li>"create folder [name]"</li>
+                            <li>"list files in [folder]"</li>
+                            <li>"delete folder [name]"</li>
+                        </ul>
+                    </div>
+                    <div id="command-result" class="command-result"></div>
                 </div>
             </div>
         </div>
-        <div id="settings" class="section" style="display:none;">
-            <h2>Settings</h2>
-            <button class="close-chatbot" onclick="showSection('dashboard')">Back</button>
-        </div>
     </div>
-</div>
-  <script>
-       function showSection(section) {
+    <script>
+        function showSection(section) {
             document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
             document.getElementById(section).style.display = 'block';
         }
         showSection('chat');
-  </script>
-  <script src="renderer.js"></script>
+    </script>
+    <script src="renderer.js"></script>
 </body>
 
 </html>
