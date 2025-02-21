@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('electron', {
     executeCommand: (command) => ipcRenderer.invoke('execute-command', command),
     startVoiceRecognition: () => ipcRenderer.invoke('start-voice-recognition'),
     handleFileOperation: (operation, path) => ipcRenderer.invoke('file-operation', operation, path),
-    startScreenMonitor: () => ipcRenderer.invoke('start-screen-monitor')
+    toggleScreenMonitor: (shouldStart) => ipcRenderer.invoke('toggle-screen-monitor', shouldStart),
+    analyzeScreen: (question) => ipcRenderer.invoke('analyze-screen', question)
 });

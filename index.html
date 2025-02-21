@@ -83,17 +83,35 @@
             <div id="screen-monitor" class="section" style="display: none;">
                 <div class="screen-monitor-container">
                     <div class="monitor-header">
-                        <h2>Screen Monitor</h2>
-                        <button id="start-monitor" class="monitor-btn">Start Monitoring</button>
+                        <h2>Screen Analysis Assistant</h2>
+                        <div class="monitor-controls">
+                            <span id="monitor-status" class="status-indicator"></span>
+                            <button id="start-monitor" class="monitor-btn">Start Monitoring</button>
+                        </div>
                     </div>
                     <div class="screen-content">
-                        <div id="screen-preview"></div>
-                        <div class="analysis-panel">
-                            <textarea id="screen-question"
-                                placeholder="Ask a question about the screen content..."></textarea>
-                            <button id="analyze-btn">Analyze</button>
+                        <!-- Added screen preview section -->
+                        <div class="preview-panel">
+                            <h3>Current Screen</h3>
+                            <div class="screen-preview-container">
+                                <img id="screen-preview-img" alt="Screen Preview" />
+                            </div>
                         </div>
-                        <div id="analysis-result"></div>
+                        
+                        <div class="analysis-panel">
+                            <div class="input-group">
+                                <textarea 
+                                    id="screen-question" 
+                                    placeholder="Ask anything about what's on your screen..."
+                                    class="question-input"
+                                ></textarea>
+                                <button id="analyze-btn" class="analyze-btn">Ask AI</button>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-container">
+                            <div id="analysis-result" class="analysis-result"></div>
+                        </div>
                     </div>
                 </div>
             </div>

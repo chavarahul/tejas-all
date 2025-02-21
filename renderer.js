@@ -105,6 +105,7 @@ async function handleMessage() {
       };
       speechSynthesis.speak(utterance);
   } else if (!isSoundEnabled) {
+      // If sound is disabled, still show animation briefly
       setTimeout(() => {
           avatarContainer.classList.remove('speaking');
           currentlySpeaking = false;
@@ -240,85 +241,5 @@ async function executeCommand(command) {
     if (commandResult) {
       commandResult.innerHTML = `<div class="error"><p>${errorMessage}</p></div>`;
     }
-  }
-}
-
-let isMonitoring = false;
-const startMonitorBtn = document.getElementById('start-monitor');
-const analyzeBtn = document.getElementById('analyze-btn');
-const screenQuestion = document.getElementById('screen-question');
-const analysisResult = document.getElementById('analysis-result');
-
-if (startMonitorBtn) {
-  startMonitorBtn.addEventListener('click', async () => {
-    try {
-      isMonitoring = !isMonitoring;
-      startMonitorBtn.textContent = isMonitoring ? 'Stop Monitoring' : 'Start Monitoring';
-      
-      if (isMonitoring) {
-        startScreenMonitoring();
-      }
-    } catch (error) {
-      console.error('Error toggling screen monitor:', error);
-    }
-  });
-}
-
-if (analyzeBtn) {
-  analyzeBtn.addEventListener('click', async () => {
-    const question = screenQuestion.value.trim();
-    if (!question) return;
-
-    try {
-      const screenContent = await window.electron.startScreenMonitor();
-      
-      if (screenContent.success) {
-        // Send screen content and question to AI for analysis
-        const response = await fetch('http://localhost:5000/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            input: `Analyze this screen content and answer the question: ${question}\n\nScreen Content: ${JSON.stringify(screenContent.data)}`
-          })
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          analysisResult.innerHTML = `<p><strong>Question:</strong> ${question}</p><p><strong>Analysis:</strong> ${result.response}</p>`;
-        }
-      }
-    } catch (error) {
-      console.error('Error analyzing screen:', error);
-      analysisResult.innerHTML = `<p class="error">Error analyzing screen: ${error.message}</p>`;
-    }
-  });
-}
-
-async function startScreenMonitoring() {
-  while (isMonitoring) {
-    try {
-      const screenContent = await window.electron.startScreenMonitor();
-      if (screenContent.success) {
-        updateScreenPreview(screenContent.data);
-      }
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Update every 5 seconds
-    } catch (error) {
-      console.error('Error in screen monitoring:', error);
-      isMonitoring = false;
-      startMonitorBtn.textContent = 'Start Monitoring';
-      break;
-    }
-  }
-}
-
-function updateScreenPreview(content) {
-  const preview = document.getElementById('screen-preview');
-  if (preview) {
-    preview.innerHTML = `
-      <p><strong>Detected Text:</strong></p>
-      <p>${content.text.substring(0, 200)}...</p>
-      <p><strong>Image Info:</strong></p>
-      <p>Resolution: ${content.imageMetadata.width}x${content.imageMetadata.height}</p>
-    `;
   }
 }

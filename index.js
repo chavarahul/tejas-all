@@ -9,6 +9,8 @@ import { fileOperations } from './fileOperations.js';
 import screenshot from 'screenshot-desktop';
 import Tesseract from 'tesseract.js';
 import sharp from 'sharp';
+import { desktopCapturer } from 'electron';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -141,8 +143,19 @@ ipcMain.handle('start-voice-recognition', async () => {
 
 async function captureScreen() {
   try {
-    const imagePath = await screenshot();
-    return imagePath;
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 1920, height: 1080 }
+    });
+    
+    const mainScreen = sources[0];
+    const imageData = mainScreen.thumbnail.toDataURL();
+    
+    return {
+      image: imageData,
+      screenName: mainScreen.name,
+      timestamp: new Date().toISOString()
+    };
   } catch (error) {
     console.error('Error capturing screen:', error);
     throw error;
@@ -175,6 +188,67 @@ ipcMain.handle('start-screen-monitor', async () => {
       data: screenContent
     };
   } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+
+let monitoringInterval = null;
+
+ipcMain.handle('toggle-screen-monitor', async (event, shouldStart) => {
+  try {
+    if (shouldStart) {
+      const screenData = await captureScreen();
+      return {
+        success: true,
+        isActive: true,
+        data: screenData
+      };
+    } else {
+      if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+        monitoringInterval = null;
+      }
+      return {
+        success: true,
+        isActive: false
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+ipcMain.handle('analyze-screen', async (event, question) => {
+  try {
+    const screenData = await captureScreen();
+    
+    if (!screenData.success) {
+      throw new Error('Failed to capture screen');
+    }
+
+    const prompt = `Analyzing screen content from ${screenData.data.screenName} captured at ${screenData.data.timestamp}.
+    Extracted text content: ${screenData.data.text}
+    
+    User question: "${question}"
+    
+    Please analyze the content and provide a detailed response.`;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
+    
+    return {
+      success: true,
+      response: response
+    };
+  } catch (error) {
+    console.error('Screen analysis error:', error);
     return {
       success: false,
       error: error.message
