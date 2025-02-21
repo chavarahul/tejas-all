@@ -97,19 +97,19 @@ async function handleMessage() {
     if ('speechSynthesis' in window && isSoundEnabled) {
       const utterance = new SpeechSynthesisUtterance(botResponse);
       utterance.onend = () => {
-          avatarContainer.classList.remove('speaking');
-          currentlySpeaking = false;
+        avatarContainer.classList.remove('speaking');
+        currentlySpeaking = false;
       };
       utterance.onstart = () => {
-          currentlySpeaking = true;
+        currentlySpeaking = true;
       };
       speechSynthesis.speak(utterance);
-  } else if (!isSoundEnabled) {
+    } else if (!isSoundEnabled) {
       setTimeout(() => {
-          avatarContainer.classList.remove('speaking');
-          currentlySpeaking = false;
+        avatarContainer.classList.remove('speaking');
+        currentlySpeaking = false;
       }, 2000);
-  }
+    }
 
   } catch (error) {
     console.error("Error fetching bot response:", error);
@@ -241,112 +241,116 @@ async function executeCommand(command) {
       commandResult.innerHTML = `<div class="error"><p>${errorMessage}</p></div>`;
     }
   }
-}let isMonitoring = false;
+} let isMonitoring = false;
 
 const initScreenMonitoring = () => {
-    const startMonitorBtn = document.getElementById('start-monitor');
-    const screenPreviewImg = document.getElementById('screen-preview-img');
-    const monitorStatus = document.getElementById('monitor-status');
-    const analyzeBtn = document.getElementById('analyze-btn');
-    const screenQuestion = document.getElementById('screen-question');
+  const startMonitorBtn = document.getElementById('start-monitor');
+  const screenPreviewImg = document.getElementById('screen-preview-img');
+  const monitorStatus = document.getElementById('monitor-status');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const screenQuestion = document.getElementById('screen-question');
 
-    const handleScreenUpdate = (event, data) => {
-        if (data && data.image) {
-            screenPreviewImg.src = data.image;
-        }
-    };
-
-    const handleAnalysis = async () => {
-        try {
-            analyzeBtn.disabled = true;
-            const question = screenQuestion.value.trim();
-            
-            if (!question) {
-                alert('Please enter a question about the screen content');
-                return;
-            }
-            const result = await window.electron.analyzeScreen(question);
-        
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to analyze screen content');
-            }
-    
-            // Make API call to generate response
-            const response = await fetch('http://localhost:5000/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  input: `The following text has been extracted from a screen:\n"${result.response}"\n\nAnalyze the text carefully and answer the following question with the best possible explanation.\n\nIf the answer has multiple possibilities, provide options or reasoning where necessary.\n\nQuestion:\n"${question}"\n\nYour response should be:\n- Direct and precise when a clear answer exists.\n- Detailed and explanatory when analysis is needed.\n- If the text contains options, list and evaluate them.\n- If the information is insufficient, explain why.\n\nProvide your answer in a structured way.`
-                })
-            });
-    
-            if (!response.ok) {
-                throw new Error(`API request failed with status: ${response.status}`);
-            }
-    
-            const res = await response.json();
-    
-            const analysisResult = document.createElement('div');
-            analysisResult.className = 'analysis-result';
-            analysisResult.textContent = res.response;
-            
-            const analysisPanel = document.querySelector('.analysis-panel');
-            if (!analysisPanel) {
-                throw new Error('Analysis panel element not found');
-            }
-            
-            analysisPanel.appendChild(analysisResult);
-            
-            return res.response;
-
-        } catch (error) {
-            console.error('Analysis error:', error);
-            alert(`Error: ${error.message}`);
-        } finally {
-            analyzeBtn.disabled = false;
-        }
-    };
-
-    const toggleMonitoring = async () => {
-        try {
-            isMonitoring = !isMonitoring;
-            startMonitorBtn.disabled = true;
-
-            const result = await window.electron.toggleScreenMonitor(isMonitoring);
-            
-            if (result.success) {
-                startMonitorBtn.textContent = isMonitoring ? 'Stop Monitoring' : 'Start Monitoring';
-                monitorStatus.textContent = isMonitoring ? '🟢 Active' : '⚪ Inactive';
-                
-                if (result.data && result.data.image) {
-                    screenPreviewImg.src = result.data.image;
-                }
-
-                if (isMonitoring) {
-                    window.electron.onScreenUpdate(handleScreenUpdate);
-                } else {
-                    window.electron.removeScreenUpdate(handleScreenUpdate);
-                }
-            } else {
-                throw new Error(result.error || 'Failed to toggle screen monitoring');
-            }
-        } catch (error) {
-            console.error('Monitor toggle error:', error);
-            alert(`Error: ${error.message}`);
-            isMonitoring = false;
-            startMonitorBtn.textContent = 'Start Monitoring';
-            monitorStatus.textContent = '⚪ Inactive';
-        } finally {
-            startMonitorBtn.disabled = false;
-        }
-    };
-
-    if (startMonitorBtn) {
-        startMonitorBtn.addEventListener('click', toggleMonitoring);
+  const handleScreenUpdate = (event, data) => {
+    if (data && data.image) {
+      screenPreviewImg.src = data.image;
     }
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', handleAnalysis);
+  };
+
+  const handleAnalysis = async () => {
+    try {
+      analyzeBtn.disabled = true;
+      const question = screenQuestion.value.trim();
+
+      if (!question) {
+        alert('Please enter a question about the screen content');
+        return;
+      }
+      const result = await window.electron.analyzeScreen(question);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to analyze screen content');
+      }
+
+      const response = await fetch('http://localhost:5000/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          input: `The following text has been extracted from a screen:\n"${result.response}"\n\nAnalyze the text carefully and answer the following question with the best possible explanation.\n\nIf the answer has multiple possibilities, provide options or reasoning where necessary.\n\nQuestion:\n"${question}"\n\nYour response should be:\n- Direct and precise when a clear answer exists.\n- Detailed and explanatory when analysis is needed.\n- If the text contains options, list and evaluate them.\n- If the information is insufficient, explain why.\n\nProvide your answer in a structured way.`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`);
+      }
+
+      const res = await response.json();
+      let analysisPanel = document.querySelector('.analysis-panel');
+      if (!analysisPanel) {
+        throw new Error('Analysis panel element not found');
+      }
+      analysisPanel.innerHTML = '';
+
+      const analysisResult = document.createElement('div');
+      analysisResult.className = 'analysis-result';
+      analysisResult.textContent = res.response;
+
+      analysisPanel = document.querySelector('.analysis-panel');
+      if (!analysisPanel) {
+        throw new Error('Analysis panel element not found');
+      }
+
+      analysisPanel.appendChild(analysisResult);
+
+      return res.response;
+
+    } catch (error) {
+      console.error('Analysis error:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      analyzeBtn.disabled = false;
     }
+  };
+
+  const toggleMonitoring = async () => {
+    try {
+      isMonitoring = !isMonitoring;
+      startMonitorBtn.disabled = true;
+
+      const result = await window.electron.toggleScreenMonitor(isMonitoring);
+
+      if (result.success) {
+        startMonitorBtn.textContent = isMonitoring ? 'Stop Monitoring' : 'Start Monitoring';
+        monitorStatus.textContent = isMonitoring ? '🟢 Active' : '⚪ Inactive';
+
+        if (result.data && result.data.image) {
+          screenPreviewImg.src = result.data.image;
+        }
+
+        if (isMonitoring) {
+          window.electron.onScreenUpdate(handleScreenUpdate);
+        } else {
+          window.electron.removeScreenUpdate(handleScreenUpdate);
+        }
+      } else {
+        throw new Error(result.error || 'Failed to toggle screen monitoring');
+      }
+    } catch (error) {
+      console.error('Monitor toggle error:', error);
+      alert(`Error: ${error.message}`);
+      isMonitoring = false;
+      startMonitorBtn.textContent = 'Start Monitoring';
+      monitorStatus.textContent = '⚪ Inactive';
+    } finally {
+      startMonitorBtn.disabled = false;
+    }
+  };
+
+  if (startMonitorBtn) {
+    startMonitorBtn.addEventListener('click', toggleMonitoring);
+  }
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', handleAnalysis);
+  }
 };
 
 document.addEventListener('DOMContentLoaded', initScreenMonitoring);
