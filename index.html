@@ -6,19 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Desktop Assistant</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 
 <body>
-    <div class="dashboard">
+    
+    <div id="dashboard" class="dashboard">
         <div class="sidebar">
             <button class="menu-item" onclick="showSection('chat')">
                 <div class="btn-img">
-                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/6072/6072846.png" alt="Chat" />
-                </div>
-            </button>
-            <button class="menu-item" onclick="showSection('settings')">
-                <div class="btn-img">
-                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/8187/8187143.png" alt="Settings" />
+                    💬
                 </div>
             </button>
             <button class="menu-item" onclick="showSection('files')">
@@ -27,7 +24,12 @@
             </button>
             <button class="menu-item" onclick="showSection('screen-monitor')">
                 <div class="btn-img">
-                    <img class="image" src="https://cdn-icons-png.flaticon.com/512/2956/2956762.png" alt="Screen Monitor" />
+                    🖥️
+                </div>
+            </button>
+            <button class="menu-item" onclick="showSection('settings')">
+                <div class="btn-img">
+                    ⚙️
                 </div>
             </button>
         </div>
@@ -53,9 +55,30 @@
                     </div>
                 </div>
             </div>
-            <div id="settings" class="section" style="display:none;">
+            <div id="settings" class="section set" style="display:none;">
                 <h2>Settings</h2>
-                <button class="close-chatbot" onclick="showSection('dashboard')">Back</button>
+                <div class="settings-container">
+                    <div class="permission-toggle">
+                        <div>
+                            <h3>Folder Access</h3>
+                            <p>Allow access to file system for managing folders and files</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="folder-permission">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="permission-toggle">
+                        <div>
+                            <h3>Screen Access</h3>
+                            <p>Allow screen monitoring and analysis features</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="screen-permission">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
             </div>
             <div id="files" class="section" style="display: none;">
                 <div class="files-container">
@@ -96,18 +119,15 @@
                                 <img id="screen-preview-img" alt="Screen Preview" />
                             </div>
                         </div>
-                        
+
                         <div class="analysis-panel">
                             <div class="input-group">
-                                <textarea 
-                                    id="screen-question" 
-                                    placeholder="Ask anything about what's on your screen..."
-                                    class="question-input"
-                                ></textarea>
+                                <textarea id="screen-question" placeholder="Ask anything about what's on your screen..."
+                                    class="question-input"></textarea>
                                 <button id="analyze-btn" class="analyze-btn">Ask AI</button>
                             </div>
                         </div>
-                        
+
                         <div class="chat-container">
                             <div id="analysis-result" class="analysis-result"></div>
                         </div>

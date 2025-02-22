@@ -8,6 +8,49 @@ if (window.electron) {
   });
 }
 
+const permissions = {
+  folderAccess: false,
+  screenAccess: false
+};
+
+function updateSectionAccess() {
+  const filesSection = document.getElementById('files');
+  const screenSection = document.getElementById('screen-monitor');
+  if (!permissions.folderAccess) {
+    filesSection.classList.add('disabled-section');
+  } else {
+    filesSection.classList.remove('disabled-section');
+  }
+  if (!permissions.screenAccess) {
+    screenSection.classList.add('disabled-section');
+  } else {
+    screenSection.classList.remove('disabled-section');
+  }
+}
+
+document.getElementById('folder-permission').addEventListener('change', (e) => {
+  permissions.folderAccess = e.target.checked;
+  updateSectionAccess();
+  localStorage.setItem('permissions', JSON.stringify(permissions));
+});
+
+document.getElementById('screen-permission').addEventListener('change', (e) => {
+  permissions.screenAccess = e.target.checked;
+  updateSectionAccess();
+  localStorage.setItem('permissions', JSON.stringify(permissions));
+});
+
+window.addEventListener('load', () => {
+  const savedPermissions = localStorage.getItem('permissions');
+  if (savedPermissions) {
+    Object.assign(permissions, JSON.parse(savedPermissions));
+    document.getElementById('folder-permission').checked = permissions.folderAccess;
+    document.getElementById('screen-permission').checked = permissions.screenAccess;
+    updateSectionAccess();
+  }
+});
+
+
 function showSection(section) {
   document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
   const targetSection = document.getElementById(section);
@@ -164,23 +207,36 @@ const executeBtn = document.getElementById('execute-btn');
 if (voiceBtn) {
   voiceBtn.addEventListener('click', async () => {
     try {
-      if ('webkitSpeechRecognition' in window) {
-        const recognition = new webkitSpeechRecognition();
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
 
-        recognition.onresult = async (event) => {
-          const command = event.results[0][0].transcript;
-          textCommand.value = command;
-          executeCommand(command);
+        recognition.onstart = () => {
+          voiceBtn.textContent = '🔴 Recording...';
         };
 
-        recognition.start();
-        voiceBtn.textContent = '🔴 Recording...';
+        recognition.onresult = async (event) => {
+          const command = event.results[0][0].transcript;
+          textCommand.value = command; // Only set the input field, no execution here
+          textCommand.focus(); // Optional: focus the input for user convenience
+        };
 
         recognition.onend = () => {
           voiceBtn.textContent = '🎤 Speak';
         };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          if (event.error === 'not-allowed') {
+            alert('Microphone access denied. Check browser settings.');
+          } else if (event.error === 'no-speech') {
+            alert('No speech detected.');
+          }
+        };
+
+        recognition.start();
       } else {
         alert('Speech recognition is not supported in your browser.');
       }
@@ -241,7 +297,9 @@ async function executeCommand(command) {
       commandResult.innerHTML = `<div class="error"><p>${errorMessage}</p></div>`;
     }
   }
-} let isMonitoring = false;
+}
+
+let isMonitoring = false;
 
 const initScreenMonitoring = () => {
   const startMonitorBtn = document.getElementById('start-monitor');
