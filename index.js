@@ -6,7 +6,6 @@ import { dirname } from 'path';
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { fileOperations } from './fileOperations.js';
-import screenshot from 'screenshot-desktop';
 import Tesseract from 'tesseract.js';
 import sharp from 'sharp';
 import { desktopCapturer } from 'electron';
